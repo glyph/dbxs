@@ -15,6 +15,7 @@ from ._access import (
     query,
     statement,
 )
+from ._repository import repository
 
 
 __version__ = "0.0.5"
@@ -25,6 +26,7 @@ __all__ = [
     "many",
     "maybe",
     "accessor",
+    "repository",
     "statement",
     "query",
     "ParamMismatch",

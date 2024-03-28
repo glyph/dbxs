@@ -15,6 +15,7 @@ from .. import (
     maybe,
     one,
     query,
+    repository,
     statement,
 )
 from .._typing_compat import Protocol
@@ -119,7 +120,22 @@ class FooAccessPattern(Protocol):
         """
 
 
+class OtherAccessPattern(Protocol):
+    @query(sql="select {value} + 1", load=one(lambda db, x: x))
+    async def addOneTo(self, value: int) -> int:
+        ...
+
+
 accessFoo = accessor(FooAccessPattern)
+
+
+@dataclass
+class ExampleRepository:
+    foo: FooAccessPattern
+    other: OtherAccessPattern
+
+
+exampleRepo = repository(ExampleRepository)
 
 
 async def schemaAndData(c: AsyncConnection) -> None:
@@ -300,3 +316,12 @@ class AccessTestCase(TestCase):
             with self.assertRaises(TooManyResults) as tmr:
                 await db.oopsQueryNotStatement()
             self.assertIn("should not return", str(tmr.exception))
+
+    @immediateTest()
+    async def test_repository(self, pool: MemoryPool) -> None:
+        """
+        Test constructing a repository.
+        """
+        async with exampleRepo(pool.connectable) as repo:
+            self.assertEqual(await repo.foo.echoValue(7), "7")
+            self.assertEqual(await repo.other.addOneTo(3), 4)
