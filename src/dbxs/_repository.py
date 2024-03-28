@@ -5,6 +5,7 @@ A repository combines a collection of accessors.
 
 from __future__ import annotations
 
+import sys
 from contextlib import asynccontextmanager
 from inspect import signature
 from typing import AsyncContextManager, AsyncIterator, Callable, TypeVar
@@ -48,10 +49,17 @@ def repository(
                 # transaction commits here
     """
 
-    sig = signature(repositoryType, eval_str=True)
+    sig = signature(repositoryType)
     accessors = {}
     for name, parameter in sig.parameters.items():  # pragma: no branch
-        accessors[name] = accessor(parameter.annotation)
+        annotation = parameter.annotation
+        # It would be nicer to do this with signature(..., eval_str=True), but
+        # that's not available until we require python>=3.10
+        if isinstance(annotation, str):  # pragma: no branch
+            annotation = eval(
+                annotation, sys.modules[repositoryType.__module__].__dict__
+            )
+        accessors[name] = accessor(annotation)
 
     @asynccontextmanager
     async def transactify(acxn: AsyncConnectable) -> AsyncIterator[T]:
