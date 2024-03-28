@@ -9,16 +9,17 @@ from twisted.internet.defer import Deferred
 from twisted.internet.interfaces import IReactorCore
 from twisted.python.failure import Failure
 
-from dbxs import accessor, many, one, query, statement
-from dbxs.dbapi_async import adaptSynchronousDriver, transaction
+from dbxs import many, one, query, repository, statement
+from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
+from dbxs.async_dbapi import transaction
 
 
 schema = """
-CREATE TABLE user (
+CREATE TABLE IF NOT EXISTS user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
 );
-CREATE TABLE post (
+CREATE TABLE IF NOT EXISTS post (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created TIMESTAMP NOT NULL,
     content TEXT NOT NULL,
@@ -99,7 +100,12 @@ class PostDB(Protocol):
         ...
 
 
-posts = accessor(PostDB)
+@dataclass
+class BlogRepo:
+    posts: PostDB
+
+
+blog = repository(BlogRepo)
 
 
 async def main() -> None:
@@ -108,9 +114,8 @@ async def main() -> None:
         for expr in schema.split(";"):
             await cur.execute(expr)
 
-    async with transaction(asyncDriver) as c:
-        poster = posts(c)
-        b = await poster.createUser("bob")
+    async with blog(asyncDriver) as db:
+        b = await db.posts.createUser("bob")
         await b.post("a post")
         await b.post("another post")
         post: Post
