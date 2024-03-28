@@ -10,7 +10,8 @@ from twisted.internet.interfaces import IReactorCore
 from twisted.python.failure import Failure
 
 from dbxs import accessor, many, one, query, statement
-from dbxs.dbapi_async import adaptSynchronousDriver, transaction
+from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
+from dbxs.async_dbapi import transaction
 
 
 schema = """
