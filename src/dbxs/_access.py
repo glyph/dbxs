@@ -300,6 +300,7 @@ class QueryMetadata:
                 styledSQL, styledMap = precomputedSQL[conn.paramstyle]
                 cur = await conn.cursor()
                 bound = sig.bind(None, *args, **kw)
+                bound.apply_defaults()
                 await cur.execute(styledSQL, styledMap.queryArguments(bound))
                 maybeAgen: Any = self.load(proxySelf, cur)
                 if isawaitable(maybeAgen):

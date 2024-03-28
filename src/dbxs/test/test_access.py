@@ -103,6 +103,12 @@ class FooAccessPattern(Protocol):
         Oops, it's a query, not a statement, it returns values.
         """
 
+    @query(sql="select {value}", load=one(lambda db, x: str(x)))
+    async def echoValue(self, value: int = 3) -> str:
+        """
+        Echo the given value back, with a default provided.
+        """
+
     @query(
         sql="insert into foo (baz) values ({baz}) returning bar, baz",
         load=one(Foo),
@@ -152,6 +158,20 @@ class AccessTestCase(TestCase):
         self.assertEqual(result, Foo(db, 1, 3))
         self.assertEqual(result, result2)
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
+
+    @immediateTest()
+    async def test_defaultParamValue(self, pool: MemoryPool) -> None:
+        """
+        Default parameters specified by the access Protocol are incorporated
+        into the query placeholders.
+        """
+        async with transaction(pool.connectable) as c:
+            await schemaAndData(c)
+            db = accessFoo(c)
+            result = await db.echoValue(7)
+            self.assertEqual(result, "7")
+            result = await db.echoValue()
+            self.assertEqual(result, "3")
 
     @immediateTest()
     async def test_wrongResultArity(self, pool: MemoryPool) -> None:
