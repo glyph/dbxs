@@ -271,6 +271,7 @@ jobs:
         with:
           python-version: |
             ${{ matrix.python-version }}
+            3.11
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
